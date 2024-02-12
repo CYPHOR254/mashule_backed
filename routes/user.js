@@ -39,120 +39,7 @@ const storage = multer.diskStorage({
 // Create the multer instance
 const upload = multer({ storage: storage });
 
-// router.post("/register", upload.single("logoUpload"), async (req, res) => {
-//   try {
-//     // Extract the file information from req.file
-//     const logoUpload = req.file.filename; // This assumes the filename is stored by the multer middleware
 
-//     // Extract the request body parameters
-//     const {
-//       firstName,
-//       lastName,
-//       email,
-//       phoneNumber,
-//       idNumber,
-//       dob,
-//       password,
-//       gender,
-//       schoolName,
-//       location,
-//       schoolCode,
-//       schoolRegNo,
-//       county,
-//       subcounty,
-//       nearestTown,
-//       ward,
-//       numberOfStreams,
-//       numberOfStudents,
-//       role ="user",
-//       // isactive
-//     } = req.body;
-
-//     // Generate an 8-digit account number using UUID
-//     const accountNo = uuidv4().substring(0, 8);
-
-//     // Check if the user already exists in the database based on their email
-//     const checkUserQuery = "SELECT idusers FROM users WHERE email = ?";
-//     const [existingUser, _] = await pool.query(checkUserQuery, [email]);
-//     if (existingUser.length > 0) {
-//       // User with the same email already exists
-//       return res
-//         .status(400)
-//         .json({ error: "User with this email already exists" });
-//     }
-//     // Generate a salt and hash the password using the generated salt
-//     const saltRounds = 10; // This determines the complexity of the hash
-//     const salt = await bcrypt.genSalt(saltRounds);
-//     const hashedPassword = await bcrypt.hash(password, salt);
-
-//     // Insert the user into the database
-//     const insertQuery = `INSERT INTO users
-//     (firstName, lastName, email, phoneNumber, idNumber, dob, password, gender, schoolName, location,logoUpload,
-//     schoolCode, schoolRegNo, county, subcounty, nearestTown, ward, numberOfStreams, numberOfStudents, role, accountNo)
-//     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-//     const values = [
-//       firstName,
-//       lastName,
-//       email,
-//       phoneNumber,
-//       idNumber,
-//       dob,
-//       hashedPassword,
-//       gender,
-//       schoolName,
-//       location,
-//       logoUpload,
-//       schoolCode,
-//       schoolRegNo,
-//       county,
-//       subcounty,
-//       nearestTown,
-//       ward,
-//       numberOfStreams,
-//       numberOfStudents,
-//       role,
-//       accountNo // Include the generated account number in the values
-//     ];
-//     const [result, __] = await pool.query(insertQuery, values);
-//     console.log(result);
-
-//     // ... Rest of your code ...
-
-//     if (result.affectedRows === 1) {
-//       // Send email to user with account number
-//       const transporter = nodemailer.createTransport({
-//         host: "smtp.gmail.com",
-//         port: 465,
-//         secure: true,
-//         auth: {
-//           user: "earvinekinyua@gmail.com",
-//           pass: "eobgrnqgysxkdvsh",
-//         },
-//       });
-
-//       const mailOptions = {
-//         from: "earvinekinyua@gmail.com",
-//         to: email,
-//         subject: 'Registration Successful',
-//         text: `Welcome to our platform! Your registration was successful. Your account number is ${accountNo}.`,
-//       };
-
-//       await transporter.sendMail(mailOptions);
-
-//       console.log(result);
-//       console.log("User registered successfully");
-//       return res.status(200).json({ message: "User registered successfully" });
-//     } else {
-//       console.error("Error registering user: No rows affected");
-//       return res
-//         .status(500)
-//         .json({ error: "Internal server error , No rows affected" });
-//     }
-//   } catch (err) {
-//     console.error("Error registering user:", err);
-//     return res.status(500).json({ error: "Internal server error, here " });
-//   }
-// });
 
 router.post("/register", upload.single("logoUpload"), async (req, res) => {
   try {
@@ -180,7 +67,7 @@ router.post("/register", upload.single("logoUpload"), async (req, res) => {
       numberOfStreams,
       numberOfStudents,
       role = "user",
-      // isactive
+      isactive
     } = req.body;
     // Check if the user already exists in the database based on their email
     const checkUserQuery = "SELECT idusers FROM users WHERE email = ?";
@@ -196,11 +83,26 @@ router.post("/register", upload.single("logoUpload"), async (req, res) => {
     const salt = await bcrypt.genSalt(saltRounds);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Generate a 10-digit accountNo
+    const accountNo = generateAccountNumber();
+
+    function generateAccountNumber() {
+      let accountNo = '';
+      const digits = '0123456789';
+
+      for (let i = 0; i < 10; i++) {
+        const randomIndex = Math.floor(Math.random() * digits.length);
+        accountNo += digits.charAt(randomIndex);
+      }
+
+      return accountNo;
+    }
+
     // Insert the user into the database
     const insertQuery = `INSERT INTO users 
     (firstName, lastName, email, phoneNumber, idNumber, dob, password, gender, schoolName, location,logoUpload, 
-    schoolCode, schoolRegNo, county, subcounty, nearestTown, ward, numberOfStreams, numberOfStudents,role) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    schoolCode, schoolRegNo, county, subcounty, nearestTown, ward, numberOfStreams, numberOfStudents,role , accountNo,isactive ) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? , ?)`;
     const values = [
       firstName,
       lastName,
@@ -222,7 +124,8 @@ router.post("/register", upload.single("logoUpload"), async (req, res) => {
       numberOfStreams,
       numberOfStudents,
       role,
-      // isactive
+      accountNo,
+      isactive.toLowerCase() === 'false' ? 0 : 1 // Convert 'false' to 0, 'true' to 1
     ];
     const [result, __] = await pool.query(insertQuery, values);
     console.log(result);
@@ -287,8 +190,27 @@ router.post("/register", upload.single("logoUpload"), async (req, res) => {
         from: "earvinekinyua@gmail.com",
         to: email,
         subject: "Registration Successful",
-        text: "Welcome to our platform! Your registration was successful.",
+        text: `Dear ${firstName} ${lastName},
+      
+      Welcome to our platform! Your registration has been successfully completed, and you are now part of our community.
+      
+      Here's a summary of your registration details:
+      - Full Name: ${firstName} ${lastName}
+      - Email Address: ${email}
+      - Phone Number: ${phoneNumber}
+      - Account Number: ${accountNo}
+      
+      At Mashule, we are dedicated to [briefly describe your platform's purpose or mission]. As a member, you will have access to a wide range of features and services designed to [explain the benefits or services your platform offers].
+      
+      We encourage you to explore your dashboard and take full advantage of the resources available to you. If you have any questions or need assistance, our support team is here to help.
+      
+      Thank you for choosing Mashule. We look forward to serving you and being a part of your journey.
+      
+      Best regards,
+      The [Mashule ] Team
+      [Your Contact Information]`
       };
+      
 
       await transporter.sendMail(mailOptions);
       console.log(result);
@@ -306,6 +228,8 @@ router.post("/register", upload.single("logoUpload"), async (req, res) => {
   }
 });
 
+
+
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -317,6 +241,12 @@ router.post("/login", async (req, res) => {
 
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
+    }
+
+    // Check if the user account is active
+    const isActive = user.isactive === 1; // Convert 1/0 to true/false
+    if (!isActive) {
+      return res.status(401).json({ error: "Your account is inactive. Please contact the admin for approval." });
     }
 
     // Compare the provided password with the hashed password
@@ -332,54 +262,120 @@ router.post("/login", async (req, res) => {
       expiresIn: "1h",
     });
 
-    return res.status(200).json({ accessToken: accessToken, profile: "admin" });
+    // Include school ID and user ID in response if user is not an admin
+    const responseData = {
+      accessToken: accessToken,
+      profile: user.role,
+      userId: user.idusers
+    };
+
+    if (user.role !== 'admin') {
+      responseData.schoolId = user.idusers; // Assuming school ID is stored in the user object
+    }
+
+    return res.status(200).json(responseData);
   } catch (err) {
     console.error("Error during login:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-// router.post('/login', (req, res) => {
-//   const { email, password } = req.body;
 
-//   // Check if the email exists in the database
-//   const query = 'SELECT * FROM users WHERE email = ?';
-//   db.query(query, [email], (err, results) => {
-//     if (err) {
-//       console.error('Error retrieving user:', err);
-//       return res.status(500).json({ error: 'Internal server error' });
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // Check if the user exists in the database
+//     const getUserQuery = "SELECT * FROM users WHERE email = ?";
+//     const [userRows, _] = await pool.query(getUserQuery, [email]);
+//     const user = userRows[0];
+
+//     if (!user) {
+//       return res.status(401).json({ error: "Invalid email or password" });
 //     }
 
-//     if (results.length === 0) {
-//       // User with the provided email doesn't exist
-//       return res.status(401).json({ error: 'Invalid credentials' });
-//     }
-//     else if (results[0].isactive === 'false') {
-//       return res.status(401).json({ error: 'wait for admin approval' });
+//     // Check if the user account is active
+//     const isActive = user.isactive === 1; // Convert 1/0 to true/false
+//     if (!isActive) {
+//       return res.status(401).json({ error: "Your account is inactive. Please contact the admin for approval." });
 //     }
 
-//     // Compare the provided password with the hashed password in the database
-//     const user = results[0];
-//     bcrypt.compare(password, user.password, (compareErr, isMatch) => {
-//       if (compareErr) {
-//         console.error('Error comparing passwords:', compareErr);
-//         return res.status(500).json({ error: 'Internal server error' });
-//       }
+//     // Compare the provided password with the hashed password
+//     const passwordMatch = await bcrypt.compare(password, user.password);
 
-//       if (!isMatch) {
-//         // Passwords don't match
-//         return res.status(401).json({ error: 'Invalid credentials' });
-//       }
+//     if (!passwordMatch) {
+//       return res.status(401).json({ error: "Invalid email or password" });
+//     }
 
-//       // User is authenticated
-//       // Generate a token
-//       const token = jwt.sign({ id: user.id, email: user.email }, 'secretKey');
-
-//       // Return the token in the response
-//       return res.status(200).json({ token: token });
+//     // Generate a JWT token
+//     const tokenPayload = { userId: user.idusers, email: user.email };
+//     const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+//       expiresIn: "1h",
 //     });
-//   });
+
+//     // Include school ID in response if user is not an admin
+//     const responseData = {
+//       accessToken: accessToken,
+//       profile: user.role
+//     };
+
+//     if (user.role !== 'admin') {
+//       responseData.schoolId = user.idschools; // Assuming school ID is stored in the user object
+//     }
+
+//     return res.status(200).json(responseData);
+//   } catch (err) {
+//     console.error("Error during login:", err);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+
 // });
+
+
+// router.post("/login", async (req, res) => {
+//   try {
+//     const { email, password } = req.body;
+
+//     // Check if the user exists in the database
+//     const getUserQuery = "SELECT * FROM users WHERE email = ?";
+//     const [userRows, _] = await pool.query(getUserQuery, [email]);
+//     const user = userRows[0];
+
+//     if (!user) {
+//       return res.status(401).json({ error: "Invalid email or password" });
+//     }
+
+//     // Check if the user account is active
+//     const isActive = user.isactive === 1; // Convert 1/0 to true/false
+//     if (!isActive) {
+//       return res.status(401).json({ error: "Your account is inactive. Please contact the admin for approval." });
+//     }
+
+//     // Compare the provided password with the hashed password
+//     const passwordMatch = await bcrypt.compare(password, user.password);
+
+//     if (!passwordMatch) {
+//       return res.status(401).json({ error: "Invalid email or password" });
+//     }
+
+//     // Generate a JWT token
+//     const tokenPayload = { userId: user.idusers, email: user.email };
+//     const accessToken = jwt.sign(tokenPayload, process.env.JWT_SECRET, {
+//       expiresIn: "1h",
+//     });
+
+//     return res.status(200).json({ accessToken: accessToken, profile: user.role });
+//   } catch (err) {
+//     console.error("Error during login:", err);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
+
+
+
+
+
 
 router.get("/users", async (req, res) => {
   try {
@@ -393,91 +389,8 @@ router.get("/users", async (req, res) => {
       .status(500)
       .json({ error: "Internal server error while fetching users" });
   }
-  // router.post("/register", upload.single("logoUpload"), async (req, res) => {
-  //   try {
-  //     // Extract the request body parameters
-  //     const {
-  //       firstName,
-  //       lastName,
-  //       email,
-  //       phoneNumber,
-  //       idNumber,
-  //       dob,
-  //       password,
-  //       gender,
-  //       schoolName,
-  //       location,
-  //       schoolCode,
-  //       schoolRegNo,
-  //       county,
-  //       subcounty,
-  //       nearestTown,
-  //       ward,
-  //       numberOfStreams,
-  //       numberOfStudents,
-  //       role,
-  //       isactive,
-  //     } = req.body;
 
-  //     // Check if the user already exists in the database based on their email
-  //     const checkUserQuery = "SELECT idusers FROM users WHERE email = ?";
-  //     const [existingUser, _] = await pool.query(checkUserQuery, [email]);
 
-  //     if (existingUser.length > 0) {
-  //       // User with the same email already exists
-  //       return res
-  //         .status(400)
-  //         .json({ error: "User with this email already exists" });
-  //     }
-
-  //     // Generate a salt and hash the password using the generated salt
-  //     const hashedPassword = await bcrypt.hash(password, 10);
-
-  //     // Insert the user into the database
-  //     const insertQuery = `INSERT INTO users
-  //       (firstName, lastName, email, phoneNumber, idNumber, dob, password, gender, schoolName, location,
-  //       schoolCode, schoolRegNo, county, subcounty, nearestTown, ward, numberOfStreams, numberOfStudents, role, isactive)
-  //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'user', 'false')`;
-
-  //     const values = [
-  //       firstName,
-  //       lastName,
-  //       email,
-  //       phoneNumber,
-  //       idNumber,
-  //       dob,
-  //       hashedPassword,
-  //       gender,
-  //       schoolName,
-  //       location,
-  //       schoolCode,
-  //       schoolRegNo,
-  //       county,
-  //       subcounty,
-  //       nearestTown,
-  //       ward,
-  //       numberOfStreams,
-  //       numberOfStudents,
-  //       role,
-  //       isactive,
-  //     ];
-
-  //     const [result, __] = await pool.query(insertQuery, values);
-
-  //     if (result.affectedRows === 1) {
-  //       console.log("User registered successfully");
-  //       return res
-  //         .status(200)
-  //         .json({ message: "User registered successfully" });
-  //     } else {
-  //       console.error("Error registering user: No rows affected");
-  //       return res.status(500).json({ error: "Internal server error" });
-  //     }
-  //   } catch (err) {
-  //     console.error("Error registering user:", err);
-  //     return res.status(500).json({ error: "Internal server error" });
-  //   }
-  // });
 });
 
 module.exports = router;

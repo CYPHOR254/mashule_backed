@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer'); // Move this line here
 const path = require('path');
 const db = require('../database'); // Add your MySQL database connection here
+const fs = require('fs');  // Add this line
 
 // app.use
 
@@ -18,8 +19,6 @@ const storage = multer.diskStorage({
     cb(null, file.fieldname + '-' + uniqueSuffix + '.jpg'); // You can adjust the file extension if needed
   }
 });
-
-
 
 const upload = multer({ storage });
 
@@ -115,11 +114,26 @@ router.get('/images/:filename', (req, res) => {
   res.sendFile(path.join(__dirname, 'uploads', filename));
 });
 
-router.delete('/images/:filename', (req, res) => {
+// Update the DELETE endpoint for images
+router.delete('/api/images/:filename', async (req, res) => {
   const filename = req.params.filename;
-  // Delete the image from storage and remove related data from your database
-  res.status(200).json({ message: 'Image deleted successfully' });
+
+  try {
+    // Delete the image from storage
+    const imagePath = path.join(__dirname, '..', 'public', 'images', filename);
+    fs.unlinkSync(imagePath);
+
+    // Remove related data from your database
+    const deleteQuery = 'DELETE FROM images WHERE file_name = ?';
+    await db.query(deleteQuery, [filename]);
+
+    res.status(200).json({ message: 'Image deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting image:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 });
+
 
 // Add the following endpoints to your Node.js backend:
 // Get albums for a specific school

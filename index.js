@@ -1,10 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const connection = require("./database");
+const Updateuser = require ('./routes/updateuser')
 const UserRoutes = require("./routes/user");
 const SchoolRoutes = require("./routes/school");
 const imageRoutes = require("./routes/image.js");
 const bodyParser = require("body-parser");
+const Role = require ("./routes/roles")
 const bcrypt = require("bcrypt");
 const db = require("./database.js");
 const Event = require ("./routes/events")
@@ -25,6 +27,8 @@ app.use("/user", UserRoutes);
 app.use(SchoolRoutes);
 app.use("/event" , Event);
 app.use(Logo)
+app.use(Role)
+app.use("/updates" , Updateuser)
 app.use("/image", imageRoutes);
 app.use(express.static("public"));
 app.use("/images", express.static("images"));

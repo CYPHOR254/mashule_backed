@@ -120,6 +120,7 @@ router.get('/schools/:schoolId/events', async (req, res) => {
 
 // Delete an event by ID
 router.delete('/delete/events/:eventId', async (req, res) => {
+  console.log("bdgvtfefcdhdyc");
   const eventId = req.params.eventId;
 
   try {
