@@ -123,46 +123,7 @@ function sendApprovalEmail(userEmail) {
 
 
 
-// Define a route to handle user updates
-// router.put("/api/users/:iduser", async (req, res) => {
-//     const userId = req.params.iduser;
-//     const userData = req.body;
-  
-//     try {
-//       // Get a connection from the pool
-//       const connection = await pool.getConnection();
-  
-//       // Update the user in the database
-//       const [result] = await connection.execute(
-//         "UPDATE users SET role = ?, isactive = ? WHERE idusers = ?",
-//         [userData.role, userData.isactive, userId]
-//       );
-  
-//       // Release the connection back to the pool
-//       connection.release();
-  
-//       if (result.affectedRows > 0) {
-//         // Get the user's email from the database
-//         const [emailResult] = await pool.execute(
-//           "SELECT email FROM users WHERE idusers = ?",
-//           [userId]
-//         );
-  
-//         if (emailResult.length > 0) {
-//           const userEmail = emailResult[0].email;
-//           // Send an approval email to the user
-//           sendApprovalEmail(userEmail);
-//         }
-  
-//         res.json({ message: "User updated successfully" });
-//       } else {
-//         res.status(404).json({ error: "User not found" });
-//       }
-//     } catch (error) {
-//       console.error("Error updating user:", error);
-//       res.status(500).json({ error: "An error occurred while updating the user" });
-//     }
-//   }); 
+
 
   // Define a route to handle updating isactive from 1 to 0
 router.put("/api/users/deactivate/:iduser", async (req, res) => {
